@@ -116,6 +116,12 @@
   button:hover{background:var(--btn-hover);}
   button:active{transform:translateY(1px);}
   button.primary{background:var(--brand);border-color:var(--brand);color:#fff;font-weight:700;}
+  .btn-link{
+    font-size:13px;padding:7px 11px;border:1px solid var(--line);
+    background:var(--btn-bg);color:var(--text);border-radius:8px;
+    text-decoration:none;white-space:nowrap;
+  }
+  .btn-link:hover{background:var(--btn-hover);}
   body:not(.theme-dark) button.primary:hover{background:#1d4ed8;}
   body.theme-dark button.primary{color:#06202e;}
   select{
@@ -417,6 +423,8 @@
       <button id="btnOpen">🪟 새 탭에서 보기</button>
     </div>
     <span class="grow"></span>
+    <a class="btn-link" href="./guide.html" target="_blank" rel="noopener"
+       title="사용법 문서를 새 탭에서 엽니다">📖 사용법</a>
     <button id="btnTheme" title="밝은 화면 / 어두운 화면 전환">🌙 어둡게</button>
   </div>
   <p class="hint">코드를 붙여넣고 ▶ 실행을 누르면 오른쪽에 결과가 나타납니다</p>
