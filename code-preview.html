@@ -193,7 +193,71 @@
     min-width:0;overflow:hidden;text-overflow:ellipsis;
   }
   .pane-head .spacer{margin-left:auto;}
+
   .pane-head button{padding:4px 8px;font-size:12px;}
+
+  /* ── 에디터 탭 ─────────────────────────────── */
+  .tabbar{
+    flex:0 0 auto;display:flex;align-items:center;gap:3px;
+    padding:6px 8px 0;border-bottom:1px solid var(--line);
+    background:var(--panel-head);
+  }
+  .tabbar .tab{
+    padding:5px 11px;font-size:12.5px;
+    border:1px solid transparent;border-bottom:0;
+    border-radius:7px 7px 0 0;background:transparent;color:var(--muted);
+    position:relative;top:1px;
+  }
+  .tabbar .tab:hover{background:var(--btn-hover);}
+  .tabbar .tab.active{
+    background:var(--editor-bg);border-color:var(--line);
+    color:var(--brand);font-weight:700;
+  }
+  .tab-note{
+    margin-left:auto;padding-right:4px;
+    font-size:11.5px;color:var(--muted);
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;
+  }
+
+  /* ── 디바이스 폭 전환 ──────────────────────── */
+  .device-group{
+    display:flex;gap:2px;padding:2px;
+    border:1px solid var(--line);border-radius:8px;background:var(--btn-bg);
+  }
+  .device-group .dev{
+    border:0;background:transparent;color:var(--muted);
+    padding:4px 8px;font-size:12px;border-radius:6px;
+  }
+  .device-group .dev.active{
+    background:var(--brand-soft);color:var(--brand);font-weight:700;
+  }
+  .preview-wrap.framed #preview{
+    max-width:100%;
+    border-left:1px solid var(--line);border-right:1px solid var(--line);
+    box-shadow:0 0 24px rgba(15,23,42,.10);
+  }
+
+  /* ── 팝업(모달) ────────────────────────────── */
+  .modal{
+    position:fixed;inset:0;z-index:80;padding:16px;
+    display:flex;align-items:center;justify-content:center;
+    background:rgba(15,23,42,.55);
+  }
+  .modal[hidden]{display:none;}
+  .modal-card{
+    background:var(--panel);border:1px solid var(--line);border-radius:14px;
+    width:430px;max-width:100%;max-height:86vh;overflow:auto;padding:16px;
+    box-shadow:0 24px 60px rgba(15,23,42,.35);
+  }
+  .modal-head{
+    display:flex;align-items:center;gap:8px;
+    font-size:14px;font-weight:700;
+    border-bottom:1px solid var(--line);padding-bottom:10px;margin-bottom:10px;
+  }
+  .modal-head .spacer{margin-left:auto;}
+  .modal-foot{display:flex;justify-content:flex-end;padding-top:12px;}
+  .lib-item{cursor:pointer;}
+  .lib-item input{width:17px;height:17px;cursor:pointer;flex:0 0 auto;}
 
   /* ── 에디터(줄 번호 + 구문 강조) ───────────── */
   .editor-shell{
@@ -343,18 +407,8 @@
 
       <span class="sep"></span>
 
-      <span class="lib-wrap">
-        <button id="btnLib" title="외부 라이브러리 불러오기 태그를 코드에 추가합니다">📚 라이브러리</button>
-        <div class="lib-panel" id="libPanel" hidden>
-          <div class="lib-title">📚 라이브러리 넣기 <span class="net-badge" id="netBadge">확인 중</span></div>
-          <p class="lib-desc">
-            누르면 내 코드의 <b>&lt;head&gt; 안에 불러오기 태그가 직접 추가</b>됩니다.
-            보이는 코드 그대로 실행·저장되므로, 저장한 파일을 따로 열어도 똑같이 보입니다.
-            <b>인터넷 연결이 필요합니다.</b>
-          </p>
-          <div id="libList"></div>
-        </div>
-      </span>
+
+      <button id="btnLib" title="외부 라이브러리 불러오기 태그를 코드에 추가합니다">📚 라이브러리</button>
 
       <button id="btnFormat" title="태그 깊이에 맞춰 들여쓰기를 정리합니다">✨ 정렬</button>
       <button id="btnReset">🔄 초기화</button>
@@ -376,6 +430,14 @@
       <span class="spacer"></span>
       <span class="sub" id="codeStats">0 자 / 0 줄</span>
     </div>
+
+    <div class="tabbar" id="tabbar">
+      <button class="tab active" data-tab="full" title="전체 HTML 문서를 한 칸에서 편집합니다">📄 통합 문서</button>
+      <button class="tab" data-tab="html" title="&lt;body&gt; 안쪽만 보기">HTML</button>
+      <button class="tab" data-tab="css" title="&lt;style&gt; 안쪽만 보기">CSS</button>
+      <button class="tab" data-tab="js" title="&lt;script&gt; 안쪽만 보기">JS</button>
+      <span class="tab-note" id="tabNote">전체 문서를 그대로 편집합니다</span>
+    </div>
     <div class="editor-shell" id="editorShell">
       <div class="gutter" id="gutter"><div class="gutter-lines" id="gutterLines">1</div></div>
       <div class="code-box">
@@ -392,8 +454,13 @@
     <div class="pane-head">
       👀 실행 결과
       <span class="spacer"></span>
-      <span class="sub" id="widthLabel">전체 폭</span>
-      <button id="btnWidth">📱 모바일 폭</button>
+
+      <span class="sub" id="widthLabel">100%</span>
+      <span class="device-group" id="deviceGroup">
+        <button class="dev active" data-w="full" title="데스크톱 (100%)">🖥️ 데스크톱</button>
+        <button class="dev" data-w="768" title="태블릿 (768px)">💻 태블릿</button>
+        <button class="dev" data-w="375" title="모바일 (375px)">📱 모바일</button>
+      </span>
       <button id="btnReload" title="지금 화면을 그대로 다시 불러옵니다">🔄 새로고침</button>
       <button id="btnFull" title="Esc 키로 빠져나올 수 있습니다">⛶ 전체화면</button>
     </div>
@@ -414,6 +481,27 @@
   </div>
   <div class="console-body" id="consoleBody"></div>
 </section>
+
+
+<div class="modal" id="libModal" hidden>
+  <div class="modal-card">
+    <div class="modal-head">
+      📚 외부 CDN 라이브러리 연동
+      <span class="net-badge" id="netBadge">확인 중</span>
+      <span class="spacer"></span>
+      <button id="btnLibClose" title="닫기 (Esc)">✕</button>
+    </div>
+    <p class="lib-desc">
+      체크한 라이브러리의 불러오기 태그가 <b>내 코드의 &lt;head&gt; 안에 직접 추가</b>됩니다.
+      체크를 풀면 그 줄이 지워집니다. 보이는 코드 그대로 실행·저장되므로,
+      💾 저장한 파일을 따로 열어도 똑같이 보입니다. <b>인터넷 연결이 필요합니다.</b>
+    </p>
+    <div id="libList"></div>
+    <div class="modal-foot">
+      <button id="btnLibApply" class="primary">적용하고 실행</button>
+    </div>
+  </div>
+</div>
 
 <div class="toast" id="toast"></div>
 
@@ -715,6 +803,13 @@
     { id: 'fontawesome', name: 'Font Awesome', desc: '아이콘 넣기 (fa-solid fa-heart …)',
       key: 'font-awesome',
       tag: '<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">' },
+
+    { id: 'jquery', name: 'jQuery 3.7', desc: '옛 예제에서 자주 보이는 $ 문법',
+      key: 'jquery.min.js',
+      tag: '<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"><\/script>' },
+    { id: 'three', name: 'Three.js', desc: '3D 그래픽·파티클 효과',
+      key: 'three.min.js',
+      tag: '<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"><\/script>' },
     { id: 'chartjs', name: 'Chart.js', desc: '막대·원 그래프 그리기',
       key: 'chart.js',
       tag: '<script src="https://cdn.jsdelivr.net/npm/chart.js"><\/script>' },
@@ -750,7 +845,7 @@
   var workspace   = $('workspace');
   var resizer     = $('resizer');
   var selPreset   = $('selPreset');
-  var libPanel    = $('libPanel');
+  var libPanel    = $('libModal');
 
   var logCount = 0;
   var autoTimer = null;
@@ -758,6 +853,11 @@
   var composing = false;
   var lastDoc = '';
   var HL_LIMIT = 60000;
+
+  /* 통합 문서가 언제나 원본이다. 탭은 그 안의 한 구간을 보여줄 뿐이다. */
+  var fullCode = '';
+  var activeTab = 'full';
+  var region = { start: 0, end: 0, line: 1 };
 
   /* ══════════════════════════════════════════════
      4. 구문 강조기
@@ -882,15 +982,18 @@
         return;
       }
       editorShell.classList.remove('plain');
-      hlCode.innerHTML = highlight(src);
+      hlCode.innerHTML = (activeTab === 'css') ? paint(src, CSS_RE, CSS_CLS)
+                       : (activeTab === 'js') ? paint(src, JS_RE, JS_CLS)
+                       : highlight(src);
       syncScroll();
     });
   }
 
   function updateGutter() {
     var lines = codeEl.value.split('\n').length;
+    var first = (activeTab === 'full') ? 1 : region.line;
     var buf = [];
-    for (var i = 1; i <= lines; i++) { buf.push(i); }
+    for (var i = 0; i < lines; i++) { buf.push(first + i); }
     gutterLines.textContent = buf.join('\n');
   }
 
@@ -912,9 +1015,110 @@
 
   function updateStats() {
     var v = codeEl.value;
-    statsEl.textContent = v.length.toLocaleString('ko-KR') + ' 자 / ' +
-                          v.split('\n').length.toLocaleString('ko-KR') + ' 줄';
+    var lines = v.split('\n').length;
+    var txt = v.length.toLocaleString('ko-KR') + ' 자 / ' + lines.toLocaleString('ko-KR') + ' 줄';
+    if (activeTab !== 'full') {
+      txt = txt + ' · 전체 ' + fullCode.split('\n').length.toLocaleString('ko-KR') + ' 줄 중 ' +
+            region.line + '~' + (region.line + lines - 1) + '번째';
+    }
+    statsEl.textContent = txt;
   }
+
+  /* ══════════════════════════════════════════════
+     4-2. 통합 문서 / HTML / CSS / JS 탭
+     통합 문서가 원본이고, 나머지 탭은 그 안의 한 구간을 보여주는 창이다.
+     저장·실행·다운로드는 언제나 통합 문서 기준이라 줄 번호가 어긋나지 않는다.
+     ══════════════════════════════════════════════ */
+  function lineOf(text, pos) {
+    return text.slice(0, pos).split('\n').length;
+  }
+
+  function findRegion(tab, src) {
+    if (tab === 'full') { return { start: 0, end: src.length }; }
+
+    if (tab === 'css') {
+      var m = /<style[^>]*>/i.exec(src);
+      if (!m) { return null; }
+      var s = m.index + m[0].length;
+      var e = src.toLowerCase().indexOf('</style>', s);
+      return { start: s, end: e < 0 ? src.length : e };
+    }
+
+    if (tab === 'js') {
+      var re = /<script([^>]*)>/gi, mm;
+      while ((mm = re.exec(src))) {
+        if (/\ssrc\s*=/i.test(mm[1])) { continue; }
+        var s2 = mm.index + mm[0].length;
+        var e2 = src.toLowerCase().indexOf('<' + '/script>', s2);
+        return { start: s2, end: e2 < 0 ? src.length : e2 };
+      }
+      return null;
+    }
+
+    /* HTML 탭: <body> 안쪽에서 <style>/<script> 가 시작되기 전까지 */
+    var b = /<body[^>]*>/i.exec(src);
+    var s3 = b ? b.index + b[0].length : 0;
+    var stop = /<script[\s>]|<style[\s>]|<\/body>/i.exec(src.slice(s3));
+    return { start: s3, end: stop ? s3 + stop.index : src.length };
+  }
+
+  /* 입력창에 보이는 구간을 통합 문서에 되돌려 쓴다 */
+  function syncFromTextarea() {
+    if (activeTab === 'full') {
+      fullCode = codeEl.value;
+    } else {
+      fullCode = fullCode.slice(0, region.start) + codeEl.value + fullCode.slice(region.end);
+      region.end = region.start + codeEl.value.length;
+    }
+  }
+
+  function updateTabUI() {
+    [].forEach.call(document.querySelectorAll('#tabbar .tab'), function (b) {
+      b.classList.toggle('active', b.getAttribute('data-tab') === activeTab);
+    });
+    $('tabNote').textContent = (activeTab === 'full')
+      ? '전체 문서를 그대로 편집합니다'
+      : '통합 문서의 ' + region.line + '번째 줄부터 · 실행·저장은 전체 문서 기준';
+  }
+
+  function createRegion(tab, src) {
+    if (tab === 'css') {
+      var m = /([ \t]*)<\/head>/i.exec(src);
+      var block = '  <style>\n  </style>\n';
+      if (m) { return src.slice(0, m.index) + (m[1] || '') + block + src.slice(m.index); }
+      return block + src;
+    }
+    var m2 = /([ \t]*)<\/body>/i.exec(src);
+    var block2 = '  <scr' + 'ipt>\n  <\/scr' + 'ipt>\n';
+    if (m2) { return src.slice(0, m2.index) + (m2[1] || '') + block2 + src.slice(m2.index); }
+    return src + '\n' + block2;
+  }
+
+  function setTab(tab) {
+    if (tab === activeTab) { return true; }
+    syncFromTextarea();
+
+    var r = findRegion(tab, fullCode);
+    if (!r) {
+      var what = (tab === 'css') ? 'CSS(<style>) 부분' : 'JavaScript(<script>) 부분';
+      if (!confirm('이 코드에는 아직 ' + what + '이 없습니다.\n새로 만들고 그 탭으로 갈까요?')) { return false; }
+      fullCode = createRegion(tab, fullCode);
+      r = findRegion(tab, fullCode);
+      if (!r) { return false; }
+    }
+
+    activeTab = tab;
+    region = { start: r.start, end: r.end, line: lineOf(fullCode, r.start) };
+    codeEl.value = fullCode.slice(r.start, r.end);
+    codeEl.scrollTop = codeEl.scrollLeft = 0;
+    updateTabUI();
+    afterCodeChange();
+    return true;
+  }
+
+  [].forEach.call(document.querySelectorAll('#tabbar .tab'), function (b) {
+    b.addEventListener('click', function () { setTab(b.getAttribute('data-tab')); });
+  });
 
   /* ══════════════════════════════════════════════
      5. 코드 정렬(들여쓰기 정리)
@@ -1180,7 +1384,7 @@
      ══════════════════════════════════════════════ */
   function run() {
     clearConsole();
-    lastDoc = buildDocument(codeEl.value);
+    lastDoc = buildDocument(fullCode);
     previewEl.srcdoc = lastDoc;
   }
 
@@ -1199,7 +1403,7 @@
   }
 
   function save() {
-    try { localStorage.setItem(STORAGE_KEY, codeEl.value); } catch (e) {}
+    try { localStorage.setItem(STORAGE_KEY, fullCode); } catch (e) {}
   }
 
   function afterCodeChange() {
@@ -1213,6 +1417,7 @@
 
   /* 되돌리기(Ctrl+Z)가 살아 있도록 execCommand 로 바꾼다 */
   function setCode(text, caretAtTop) {
+    if (activeTab !== 'full') { setTab('full'); }
     var ok = false;
     try {
       codeEl.focus();
@@ -1281,7 +1486,7 @@
     var preset = PRESETS.filter(function (p) { return p.id === id; })[0];
     if (!preset) { return; }
 
-    if (codeEl.value.trim() !== '' && !isPresetCode(codeEl.value)) {
+    if (fullCode.trim() !== '' && !isPresetCode(fullCode)) {
       if (!confirm('지금 작성한 코드가 예제로 바뀝니다. 계속할까요?')) { return; }
     }
     setCode(preset.code);
@@ -1292,11 +1497,12 @@
   /* ══════════════════════════════════════════════
      11. 라이브러리 삽입
      ══════════════════════════════════════════════ */
+
   (function buildLibList() {
     var list = $('libList');
     LIBS.forEach(function (lib) {
-      var item = document.createElement('div');
-      item.className = 'lib-item';
+      var label = document.createElement('label');
+      label.className = 'lib-item';
       var info = document.createElement('div');
       info.className = 'info';
       var nm = document.createElement('div');
@@ -1307,47 +1513,61 @@
       ds.textContent = lib.desc;
       info.appendChild(nm);
       info.appendChild(ds);
-      var btn = document.createElement('button');
-      btn.textContent = '+ 넣기';
-      btn.dataset.lib = lib.id;
-      btn.addEventListener('click', function () { insertLib(lib); });
-      item.appendChild(info);
-      item.appendChild(btn);
-      list.appendChild(item);
+      var chk = document.createElement('input');
+      chk.type = 'checkbox';
+      chk.setAttribute('data-lib', lib.id);
+      label.appendChild(info);
+      label.appendChild(chk);
+      list.appendChild(label);
     });
   })();
 
   function refreshLibButtons() {
-    var code = codeEl.value;
     LIBS.forEach(function (lib) {
-      var btn = libPanel.querySelector('button[data-lib="' + lib.id + '"]');
-      if (!btn) { return; }
-      var has = code.indexOf(lib.key) !== -1;
-      btn.textContent = has ? '✔ 추가됨' : '+ 넣기';
-      btn.classList.toggle('added', has);
+      var chk = libPanel.querySelector('input[data-lib="' + lib.id + '"]');
+      if (chk) { chk.checked = fullCode.indexOf(lib.key) !== -1; }
     });
   }
 
-  function insertLib(lib) {
-    if (codeEl.value.indexOf(lib.key) !== -1) {
-      toast(lib.name + ' 은(는) 이미 추가되어 있습니다');
-      return;
-    }
-    var code = codeEl.value;
-    var m = /([ \t]*)<\/head>/i.exec(code);
-    var pos, text;
+  function addLibTag(src, lib) {
+    var m = /([ \t]*)<\/head>/i.exec(src);
     if (m) {
-      pos = m.index;
-      text = (m[1] || '') + '  ' + lib.tag + '\n';
-    } else {
-      pos = 0;
-      text = lib.tag + '\n';
+      return src.slice(0, m.index) + (m[1] || '') + '  ' + lib.tag + '\n' + src.slice(m.index);
     }
-    insertAt(pos, text);
-    refreshLibButtons();
-    run();
-    toast(lib.name + ' 태그를 코드에 넣었습니다' + (navigator.onLine ? '' : ' (지금은 오프라인입니다)'));
+    return lib.tag + '\n' + src;
   }
+
+  function removeLibTag(src, lib) {
+    return src.split('\n').filter(function (l) { return l.indexOf(lib.key) === -1; }).join('\n');
+  }
+
+  function applyLibs() {
+    var src = fullCode, added = 0, removed = 0;
+    LIBS.forEach(function (lib) {
+      var chk = libPanel.querySelector('input[data-lib="' + lib.id + '"]');
+      if (!chk) { return; }
+      var has = src.indexOf(lib.key) !== -1;
+      if (chk.checked && !has) { src = addLibTag(src, lib); added++; }
+      if (!chk.checked && has) { src = removeLibTag(src, lib); removed++; }
+    });
+    closeLibModal();
+    if (!added && !removed) { toast('바뀐 내용이 없습니다'); return; }
+    setCode(src);
+    run();
+    var msg = [];
+    if (added) { msg.push(added + '개 추가'); }
+    if (removed) { msg.push(removed + '개 제거'); }
+    toast('라이브러리를 ' + msg.join(', ') + '했습니다' + (navigator.onLine ? '' : ' (지금은 오프라인입니다)'));
+  }
+
+  function openLibModal() {
+    syncFromTextarea();
+    updateNetBadge();
+    refreshLibButtons();
+    libPanel.hidden = false;
+  }
+
+  function closeLibModal() { libPanel.hidden = true; }
 
   function updateNetBadge() {
     var badge = $('netBadge');
@@ -1358,24 +1578,11 @@
   window.addEventListener('online', updateNetBadge);
   window.addEventListener('offline', updateNetBadge);
 
-  $('btnLib').addEventListener('click', function (e) {
-    e.stopPropagation();
-    var show = libPanel.hidden;
-    libPanel.hidden = !show;
-    if (show) {
-      updateNetBadge();
-      refreshLibButtons();
-      /* 좁은 화면에서 패널이 오른쪽 밖으로 나가지 않도록 맞춘다 */
-      libPanel.style.left = '0';
-      libPanel.style.right = 'auto';
-      if (libPanel.getBoundingClientRect().right > window.innerWidth - 8) {
-        libPanel.style.left = 'auto';
-        libPanel.style.right = '0';
-      }
-    }
-  });
-  document.addEventListener('click', function (e) {
-    if (!libPanel.hidden && !libPanel.contains(e.target)) { libPanel.hidden = true; }
+  $('btnLib').addEventListener('click', openLibModal);
+  $('btnLibClose').addEventListener('click', closeLibModal);
+  $('btnLibApply').addEventListener('click', applyLibs);
+  libPanel.addEventListener('click', function (e) {
+    if (e.target === libPanel) { closeLibModal(); }
   });
 
   /* ══════════════════════════════════════════════
@@ -1388,7 +1595,8 @@
   });
 
   $('btnFormat').addEventListener('click', function () {
-    var before = codeEl.value;
+    if (activeTab !== 'full') { setTab('full'); }
+    var before = fullCode;
     var after;
     try {
       after = formatHtml(before);
@@ -1416,14 +1624,14 @@
       catch (e) { toast('복사에 실패했습니다. Ctrl+C를 눌러주세요'); }
     };
     if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(codeEl.value).then(function () { toast('복사됨!'); }, fallback);
+      navigator.clipboard.writeText(fullCode).then(function () { toast('복사됨!'); }, fallback);
     } else {
       fallback();
     }
   });
 
   $('btnSave').addEventListener('click', function () {
-    var blob = new Blob([codeEl.value], { type: 'text/html;charset=utf-8' });
+    var blob = new Blob([fullCode], { type: 'text/html;charset=utf-8' });
     var url = URL.createObjectURL(blob);
     var a = document.createElement('a');
     a.href = url;
@@ -1440,19 +1648,24 @@
     if (!win) { toast('팝업이 차단되었습니다. 주소창의 차단 해제를 눌러주세요'); return; }
     try {
       win.document.open();
-      win.document.write(codeEl.value);
+      win.document.write(fullCode);
       win.document.close();
     } catch (e) {
       toast('새 탭에서 열 수 없습니다');
     }
   });
 
-  var mobileMode = false;
-  $('btnWidth').addEventListener('click', function () {
-    mobileMode = !mobileMode;
-    previewWrap.classList.toggle('mobile', mobileMode);
-    this.textContent = mobileMode ? '🖥️ 전체 폭' : '📱 모바일 폭';
-    widthLabel.textContent = mobileMode ? '모바일 폭 375px' : '전체 폭';
+
+  function setDevice(w) {
+    previewEl.style.width = (w === 'full') ? '100%' : w + 'px';
+    previewWrap.classList.toggle('framed', w !== 'full');
+    widthLabel.textContent = (w === 'full') ? '100%' : w + 'px';
+    [].forEach.call(document.querySelectorAll('#deviceGroup .dev'), function (b) {
+      b.classList.toggle('active', b.getAttribute('data-w') === w);
+    });
+  }
+  [].forEach.call(document.querySelectorAll('#deviceGroup .dev'), function (b) {
+    b.addEventListener('click', function () { setDevice(b.getAttribute('data-w')); });
   });
 
   function setFullscreen(on) {
@@ -1550,6 +1763,7 @@
   });
 
   codeEl.addEventListener('input', function () {
+    syncFromTextarea();
     if (composing) { updateStats(); updateGutter(); save(); return; }
     afterCodeChange();
   });
@@ -1611,7 +1825,9 @@
     } catch (e) {}
 
     applyTheme(theme === 'dark');
-    codeEl.value = (saved !== null && saved !== '') ? saved : SAMPLE;
+    fullCode = (saved !== null && saved !== '') ? saved : SAMPLE;
+    codeEl.value = fullCode;
+    updateTabUI();
 
     updateStats();
     updateGutter();
